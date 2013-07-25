@@ -1,7 +1,6 @@
 package org.bhawanisingh.ubuntuedge;
 
 import java.awt.Color;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -51,14 +50,11 @@ public class MainUI extends JFrame {
 	private int xPosition;
 	private int yPosition;
 	private JPanel mainPanel;
-	private JPanel buttonPanel;
 	private MyLabel ubuntuFundingLabel;
 	private MyLabel amountCollectedLabel;
 	private MyLabel amountToCollectLabel;
 	private MyLabel daysLeftLabel;
 	private MyLabel statusLabel;
-	// private JButton refreshButton;
-	// private JButton exitbutton;
 
 	// Popup menu
 	private JPopupMenu popupMenu;
@@ -91,7 +87,6 @@ public class MainUI extends JFrame {
 
 	private void initialize() {
 		mainPanel = new JPanel(new GridLayout(5, 1, 5, 5));
-		buttonPanel = new JPanel(new FlowLayout(FlowLayout.TRAILING));
 		ubuntuFundingLabel = new MyLabel("Ubuntu Funding Stats");
 		amountCollectedLabel = new MyLabel("Amount Collected : ");
 		amountToCollectLabel = new MyLabel("Amount To Collect :  $32,000,000");
@@ -105,15 +100,10 @@ public class MainUI extends JFrame {
 	}
 
 	private void addComponents() {
-
-		// buttonPanel.add(exitbutton);
-		// buttonPanel.add(refreshButton);
-
 		mainPanel.add(ubuntuFundingLabel);
 		mainPanel.add(amountCollectedLabel);
 		mainPanel.add(amountToCollectLabel);
 		mainPanel.add(daysLeftLabel);
-		// mainPanel.add(buttonPanel);
 		mainPanel.add(statusLabel);
 
 		add(mainPanel);
@@ -123,11 +113,9 @@ public class MainUI extends JFrame {
 		// TODO Add transparency
 		mainPanel.setBackground(Color.WHITE);
 		mainPanel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.BLACK), BorderFactory.createEmptyBorder(10, 10, 10, 10)));
-		buttonPanel.setBackground(Color.WHITE);
 		ubuntuFundingLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		ubuntuFundingLabel.setFont(new Font("Ubuntu Mono", Font.TRUETYPE_FONT, 30));
 		ubuntuFundingLabel.setForeground(Color.BLACK);
-		amountCollectedLabel.setBackground(Color.WHITE);
 		amountCollectedLabel.setForeground(Color.BLACK);
 		amountCollectedLabel.setFont(font);
 		amountToCollectLabel.setForeground(Color.BLACK);
@@ -156,24 +144,6 @@ public class MainUI extends JFrame {
 				setLocation(evt.getXOnScreen() - xPosition, evt.getYOnScreen() - yPosition);
 			}
 		});
-
-		// refreshButton.addActionListener(new ActionListener() {
-		// @Override
-		// public void actionPerformed(ActionEvent e) {
-		// if (!fetching) {
-		// fetchData = new FetchData();
-		// fetchDataThread = new Thread(fetchData);
-		// fetchDataThread.start();
-		// }
-		// }
-		// });
-		//
-		// exitbutton.addActionListener(new ActionListener() {
-		// @Override
-		// public void actionPerformed(ActionEvent e) {
-		// System.exit(0);
-		// }
-		// });
 	}
 
 	// Complete PopupMenuCode
