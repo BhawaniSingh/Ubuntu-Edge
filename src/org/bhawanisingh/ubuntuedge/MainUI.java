@@ -1,11 +1,10 @@
 package org.bhawanisingh.ubuntuedge;
 
 import java.awt.Color;
-import java.awt.Font;
+import java.awt.Desktop;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.GridLayout;
-import java.awt.RenderingHints;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -15,27 +14,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
-import javax.swing.BorderFactory;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JMenuItem;
-import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
-import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.WindowConstants;
 
-/**
- *
- */
 public class MainUI extends JFrame {
-	/**
- * 
- */
+
 	private String ubuntuEdgeUrlString = "http://www.indiegogo.com/projects/ubuntu-edge";
 	private String amountCollected = "<span class=\"amount medium clearfix\">";
 	private String amountCollectedEnd = "</span>";
@@ -45,16 +37,19 @@ public class MainUI extends JFrame {
 	private String daysLeft = "<p class=\"days-left\">";
 	private String daysLeftPart = "<span class=\"amount bold\">";
 	private String daysLeftEnd = "</span>";
-	private Font font = new Font("Ubuntu", Font.BOLD, 16);
+
+	private int size = 11;
+	private GridLayout gridLayout = new GridLayout(1, 12, 3, 0);
 
 	private int xPosition;
 	private int yPosition;
-	private JPanel mainPanel;
-	private MyLabel ubuntuFundingLabel;
-	private MyLabel amountCollectedLabel;
-	private MyLabel amountToCollectLabel;
-	private MyLabel daysLeftLabel;
-	private MyLabel statusLabel;
+
+	private EdgeLabel[] fundLabels;
+	private EdgeLabel[] totalFundLabels;
+	private EdgeLabel[] daysLeftLabels;
+	private EdgePanel fundPanel;
+	private EdgePanel totalFundPanel;
+	private EdgePanel daysLeftPanel;
 
 	// Popup menu
 	private JPopupMenu popupMenu;
@@ -68,7 +63,11 @@ public class MainUI extends JFrame {
 
 	private boolean fetching;
 
+	private Image doubleBufferImage;
+	private Graphics doubleBufferGraphics;
+
 	public MainUI() {
+		super("Ubuntu Funding Stats");
 		System.setProperty("awt.useSystemAAFontSettings", "on");
 		System.setProperty("swing.aatext", "true");
 
@@ -77,8 +76,6 @@ public class MainUI extends JFrame {
 		addListeners();
 		theming();
 		buildPopUpMenu();
-		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		setUndecorated(true);
 		pack();
 		setLocationRelativeTo(null);
 		setVisible(true);
@@ -86,55 +83,105 @@ public class MainUI extends JFrame {
 	}
 
 	private void initialize() {
-		mainPanel = new JPanel(new GridLayout(5, 1, 5, 5));
-		ubuntuFundingLabel = new MyLabel("Ubuntu Funding Stats");
-		amountCollectedLabel = new MyLabel("Amount Collected : ");
-		amountToCollectLabel = new MyLabel("Amount To Collect :  $32,000,000");
-		daysLeftLabel = new MyLabel("Days Left :");
-		// refreshButton = new JButton("Refresh");
-		// exitbutton = new JButton("Exit");
-		statusLabel = new MyLabel();
+		setLayout(new GridLayout(3, 1, 0, 10));
+		fundPanel = new EdgePanel(gridLayout);
+		fundLabels = new EdgeLabel[size];
+		String label = "";
+		for (int i = 0; i < fundLabels.length; ++i) {
+			if (i == 0) {
+				label = "$";
+			} else {
+				label = " ";
+			}
+			fundLabels[i] = new EdgeLabel(label);
+		}
+
+		totalFundPanel = new EdgePanel(gridLayout);
+		totalFundLabels = new EdgeLabel[size];
+		for (int i = 0; i < totalFundLabels.length; ++i) {
+			if (i == 0) {
+				label = "$";
+			} else {
+				label = " ";
+			}
+			totalFundLabels[i] = new EdgeLabel(label);
+		}
+		updateTotalAmount("$32,000,000");
+
+		daysLeftPanel = new EdgePanel(gridLayout);
+		daysLeftLabels = new EdgeLabel[size];
+		for (int i = 0; i < daysLeftLabels.length; ++i) {
+			daysLeftLabels[i] = new EdgeLabel(" ");
+		}
+		updateDaysLeft("DaysLeft:--");
 
 		timedFetch = new TimedFetch();
 		timerThread = new Thread(timedFetch);
 	}
 
 	private void addComponents() {
-		mainPanel.add(ubuntuFundingLabel);
-		mainPanel.add(amountCollectedLabel);
-		mainPanel.add(amountToCollectLabel);
-		mainPanel.add(daysLeftLabel);
-		mainPanel.add(statusLabel);
 
-		add(mainPanel);
+		for (EdgeLabel fundLabel : fundLabels) {
+			fundPanel.add(fundLabel);
+		}
+		for (EdgeLabel fundLabel : totalFundLabels) {
+			totalFundPanel.add(fundLabel);
+		}
+		for (EdgeLabel fundLabel : daysLeftLabels) {
+			daysLeftPanel.add(fundLabel);
+		}
+		add(fundPanel);
+		add(totalFundPanel);
+		add(daysLeftPanel);
 	}
 
 	private void theming() {
-		// TODO Add transparency
-		mainPanel.setBackground(Color.WHITE);
-		mainPanel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.BLACK), BorderFactory.createEmptyBorder(10, 10, 10, 10)));
-		ubuntuFundingLabel.setHorizontalAlignment(SwingConstants.CENTER);
-		ubuntuFundingLabel.setFont(new Font("Ubuntu Mono", Font.TRUETYPE_FONT, 30));
-		ubuntuFundingLabel.setForeground(Color.BLACK);
-		amountCollectedLabel.setForeground(Color.BLACK);
-		amountCollectedLabel.setFont(font);
-		amountToCollectLabel.setForeground(Color.BLACK);
-		amountToCollectLabel.setFont(font);
-		daysLeftLabel.setForeground(Color.BLACK);
-		daysLeftLabel.setFont(font);
-		statusLabel.setForeground(Color.BLACK);
-		statusLabel.setBorder(BorderFactory.createEmptyBorder(15, 10, 15, 0));
+		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		setUndecorated(true);
+		setBackground(new Color(0, 0, 0, 0));
 	}
 
 	private void addListeners() {
+		fundLabels[0].addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent mouseEvent) {
+				if (mouseEvent.getClickCount() == 2) {
+					try {
+						Desktop.getDesktop().browse(new URI("http://www.ubuntu-edge.info"));
+					} catch (IOException ioException) {
+					} catch (URISyntaxException uriSyntaxException) {
+					}
+				}
+			}
+
+			@Override
+			public void mousePressed(MouseEvent mouseEvent) {
+				openPopUp(mouseEvent);
+			}
+		});
+
+		totalFundLabels[0].addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent mouseEvent) {
+				if (mouseEvent.getClickCount() == 2) {
+					try {
+						Desktop.getDesktop().browse(new URI(ubuntuEdgeUrlString));
+					} catch (IOException ioException) {
+					} catch (URISyntaxException uriSyntaxException) {
+					}
+				}
+			}
+
+			@Override
+			public void mousePressed(MouseEvent mouseEvent) {
+				openPopUp(mouseEvent);
+			}
+		});
+
 		addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent mouseEvent) {
-				xPosition = mouseEvent.getX();
-				yPosition = mouseEvent.getY();
-				if (mouseEvent.isPopupTrigger()) {
-					popupMenu.show(MainUI.this, mouseEvent.getX(), mouseEvent.getY());
-				}
+				openPopUp(mouseEvent);
 			}
 		});
 
@@ -156,6 +203,7 @@ public class MainUI extends JFrame {
 		refreshMenuItem.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				repaint();
 				if (!fetching) {
 					fetchData = new FetchData();
 					fetchDataThread = new Thread(fetchData);
@@ -166,6 +214,7 @@ public class MainUI extends JFrame {
 		exitMenuItem.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				repaint();
 				System.exit(0);
 			}
 		});
@@ -175,6 +224,60 @@ public class MainUI extends JFrame {
 		exitMenuItem.setOpaque(true);
 		exitMenuItem.setBackground(Color.WHITE);
 
+	}
+
+	private void openPopUp(MouseEvent mouseEvent) {
+		xPosition = mouseEvent.getX();
+		yPosition = mouseEvent.getY();
+		if (mouseEvent.isPopupTrigger()) {
+			popupMenu.show(MainUI.this, mouseEvent.getX(), mouseEvent.getY());
+			MainUI.this.revalidate();
+		}
+	}
+
+	private void updateAmount(String amount) {
+		amount = amount.replace("$", "").replace(",", "");
+		System.out.println(amount + "\t this is the amount");
+		char[] amt = amount.toCharArray();
+		int diff = fundLabels.length - amt.length;
+		for (int i = amt.length - 1; i >= 0; --i) {
+			fundLabels[i + diff].setText(amt[i] + "");
+		}
+
+	}
+
+	private void updateTotalAmount(String amount) {
+		amount = amount.replace("$", "").replace(",", "");
+		System.out.println(amount + "\t this is the total amount");
+		char[] amt = amount.toCharArray();
+		int diff = totalFundLabels.length - amt.length;
+		for (int i = amt.length - 1; i >= 0; --i) {
+			totalFundLabels[i + diff].setText(amt[i] + "");
+		}
+	}
+
+	private void updateDaysLeft(String daysLeft) {
+		System.out.println(daysLeft + "\t this is the total days left");
+		char[] amt = daysLeft.toCharArray();
+		int diff = daysLeftLabels.length - amt.length;
+		for (int i = amt.length - 1; i >= 0; --i) {
+			daysLeftLabels[i + diff].setText(amt[i] + "");
+		}
+	}
+
+	@Override
+	public void update(Graphics g) {
+		super.update(g);
+		System.err.println("update called");
+		if (doubleBufferImage == null) {
+			doubleBufferImage = createImage(getWidth(), getHeight());
+			doubleBufferGraphics = doubleBufferImage.getGraphics();
+		}
+		doubleBufferGraphics.setColor(getBackground());
+		doubleBufferGraphics.fillRect(0, 0, getWidth(), getHeight());
+		doubleBufferGraphics.setColor(getForeground());
+		paint(doubleBufferGraphics);
+		g.drawImage(doubleBufferImage, 0, 0, this);
 	}
 
 	public static void main(String[] args) {
@@ -189,6 +292,7 @@ public class MainUI extends JFrame {
 		} catch (UnsupportedLookAndFeelException unsupportedLookAndFeelException) {
 
 		}
+
 		new MainUI().setVisible(true);
 	}
 
@@ -196,7 +300,6 @@ public class MainUI extends JFrame {
 		@Override
 		public void run() {
 			fetching = true;
-			statusLabel.setText("Updating...");
 			URL ubuntuEdgeURL;
 			InputStream inputStream = null;
 			BufferedReader bufferedReader;
@@ -215,7 +318,7 @@ public class MainUI extends JFrame {
 						print = line.substring(line.indexOf(amountCollected) + amountCollected.length());
 						print = print.substring(0, print.indexOf(amountCollectedEnd));
 						System.out.println("Amount Collected : " + print);
-						amountCollectedLabel.setText("Amount Collected : " + print);
+						updateAmount(print);
 					}
 
 					if (line.contains(amountToCollect)) {
@@ -228,7 +331,7 @@ public class MainUI extends JFrame {
 							print = print.substring(0, print.indexOf(amountToCollectEnd));
 						}
 						System.out.println("Amount To Collect :" + print);
-						amountToCollectLabel.setText(amountToCollectLabel.getText());
+						updateTotalAmount(print);
 					}
 
 					if (line.contains(daysLeft)) {
@@ -240,8 +343,8 @@ public class MainUI extends JFrame {
 							print = line.substring(line.indexOf(daysLeftPart) + daysLeftPart.length());
 							print = print.substring(0, print.indexOf(daysLeftEnd));
 						}
+						updateDaysLeft(print);
 						System.out.println("Days Left : " + print);
-						daysLeftLabel.setText("Days Left : " + print);
 					}
 				}
 			} catch (Exception exception) {
@@ -252,7 +355,6 @@ public class MainUI extends JFrame {
 					inputStream.close();
 				} catch (IOException exception) {
 				}
-				statusLabel.setText("");
 				fetching = false;
 			}
 
@@ -293,25 +395,6 @@ public class MainUI extends JFrame {
 					exception.printStackTrace();
 				}
 			}
-		}
-	}
-
-	class MyLabel extends JLabel {
-
-		public MyLabel() {
-			super();
-		}
-
-		public MyLabel(String text) {
-			super(text);
-		}
-
-		@Override
-		public void paint(Graphics g) {
-			Graphics2D g2 = (Graphics2D) g;
-			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-					RenderingHints.VALUE_ANTIALIAS_ON);
-			super.paint(g2);
 		}
 	}
 }
