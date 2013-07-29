@@ -2,9 +2,7 @@ package org.bhawanisingh.ubuntuedge;
 
 import java.awt.Color;
 import java.awt.Desktop;
-import java.awt.Graphics;
 import java.awt.GridLayout;
-import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -50,6 +48,7 @@ public class MainUI extends JFrame {
 	private EdgePanel fundPanel;
 	private EdgePanel totalFundPanel;
 	private EdgePanel daysLeftPanel;
+	private EdgePanel mainPanel;
 
 	// Popup menu
 	private JPopupMenu popupMenu;
@@ -62,9 +61,6 @@ public class MainUI extends JFrame {
 	private Thread timerThread;
 
 	private boolean fetching;
-
-	private Image doubleBufferImage;
-	private Graphics doubleBufferGraphics;
 
 	public MainUI() {
 		super("Ubuntu Funding Stats");
@@ -83,7 +79,10 @@ public class MainUI extends JFrame {
 	}
 
 	private void initialize() {
-		setLayout(new GridLayout(3, 1, 0, 10));
+		// setLayout(new GridLayout(3, 1, 0, 10));
+
+		mainPanel = new EdgePanel(new GridLayout(3, 1, 0, 10));
+
 		fundPanel = new EdgePanel(gridLayout);
 		fundLabels = new EdgeLabel[size];
 		String label = "";
@@ -130,15 +129,17 @@ public class MainUI extends JFrame {
 		for (EdgeLabel fundLabel : daysLeftLabels) {
 			daysLeftPanel.add(fundLabel);
 		}
-		add(fundPanel);
-		add(totalFundPanel);
-		add(daysLeftPanel);
+		mainPanel.add(fundPanel);
+		mainPanel.add(totalFundPanel);
+		mainPanel.add(daysLeftPanel);
+
+		add(mainPanel);
 	}
 
 	private void theming() {
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setUndecorated(true);
-		setBackground(new Color(0, 0, 0, 0));
+		setBackground(new Color(0, 0, 0, 1));
 	}
 
 	private void addListeners() {
@@ -263,21 +264,6 @@ public class MainUI extends JFrame {
 		for (int i = amt.length - 1; i >= 0; --i) {
 			daysLeftLabels[i + diff].setText(amt[i] + "");
 		}
-	}
-
-	@Override
-	public void update(Graphics g) {
-		super.update(g);
-		System.err.println("update called");
-		if (doubleBufferImage == null) {
-			doubleBufferImage = createImage(getWidth(), getHeight());
-			doubleBufferGraphics = doubleBufferImage.getGraphics();
-		}
-		doubleBufferGraphics.setColor(getBackground());
-		doubleBufferGraphics.fillRect(0, 0, getWidth(), getHeight());
-		doubleBufferGraphics.setColor(getForeground());
-		paint(doubleBufferGraphics);
-		g.drawImage(doubleBufferImage, 0, 0, this);
 	}
 
 	public static void main(String[] args) {
